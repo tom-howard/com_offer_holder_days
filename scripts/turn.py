@@ -3,12 +3,13 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.signals import SignalHandlerOptions
+from rclpy.task import Future
 
 from geometry_msgs.msg import Twist 
 from nav_msgs.msg import Odometry 
 
-from part2_navigation.tb3_tools import quaternion_to_euler
-from math import sqrt, pow, pi
+from com_offer_holder_days_modules.tb3_tools import quaternion_to_euler
+from math import degrees
 
 class Square(Node):
 
@@ -32,6 +33,8 @@ class Square(Node):
         self.first_message = False
         self.turn = False 
         
+        self.done_future = Future()
+
         ctrl_rate = 10 # hz
         self.timer = self.create_timer(
             timer_period_sec=1/ctrl_rate,
@@ -39,6 +42,7 @@ class Square(Node):
         )
 
         self.declare_parameter('yaw_ang', 45)
+        self.yaw_ang_request = self.get_parameter('yaw_ang').get_parameter_value().integer_value
 
         self.x = 0.0; self.y = 0.0; self.theta_z = 0.0
         self.xref = 0.0; self.yref = 0.0; self.theta_zref = 0.0
@@ -48,7 +52,7 @@ class Square(Node):
         self.shutdown = False
         
         self.get_logger().info(
-            f"The '{self.get_name()}' node is initialised."
+            f"Request to turn by {self.yaw_ang_request} degrees..."
         )
 
     def on_shutdown(self):
@@ -64,7 +68,7 @@ class Square(Node):
 
         (roll, pitch, yaw) = quaternion_to_euler(pose.orientation)
 
-        self.theta_z = abs(yaw) # abs(yaw) makes life much easier!!
+        self.theta_z = degrees(abs(yaw)) # abs(yaw) makes life much easier!!
 
         if not self.first_message: 
             self.first_message = True
@@ -73,37 +77,28 @@ class Square(Node):
             self.theta_zref = self.theta_z
 
     def timer_callback(self):
-        if self.turn:
-            # turn by 90 degrees...
-            # keep track of how much yaw has been accrued during the current turn
-            self.yaw = self.yaw + abs(self.theta_z - self.theta_zref)
-            self.theta_zref = self.theta_z
-            if self.yaw >= pi/2:
-                # That's enough, stop turning!
-                self.vel_msg = Twist()
-                self.turn = False
-                self.yaw = 0.0
-                self.xref = self.x
-                self.yref = self.y
-            else:
-                # Not there yet, keep going:
-                self.vel_msg.angular.z = 0.3
-        else:
-            # move forwards by 1m...
-            # keep track of how much displacement has been accrued so far
-            # (Note: Euclidean Distance)
-            self.displacement = self.displacement + sqrt(pow(self.x-self.xref, 2) + pow(self.y-self.yref, 2))
+        # turn by X degrees...
+        # keep track of how much yaw has been accrued during the current turn
+        self.yaw = self.yaw + abs(self.theta_z - self.theta_zref)
+        self.theta_zref = self.theta_z
+        if self.yaw >= self.yaw_ang_request:
+            # That's enough, stop turning!
+            self.vel_msg = Twist()
+            self.turn = False
+            self.yaw = 0.0
             self.xref = self.x
             self.yref = self.y
-            if self.displacement >= 1:
-                # That's enough, stop moving!
-                self.vel_msg = Twist()
-                self.turn = True
-                self.displacement = 0.0
-                self.theta_zref = self.theta_z
-            else:
-                # Not there yet, keep going:
-                self.vel_msg.linear.x = 0.1
+            self.get_logger().info(
+                "Stopped."
+            )
+            self.done_future.set_result('done')
+        else:
+            # Not there yet, keep going:
+            self.vel_msg.angular.z = 0.3
+            self.get_logger().info(
+                "Turning.."
+            )
+    
 
         # publish whatever velocity command has been set above:
         self.vel_pub.publish(self.vel_msg)
@@ -115,7 +110,7 @@ def main(args=None):
     )
     move_square = Square()
     try:
-        rclpy.spin(move_square)
+        rclpy.spin_until_future_complete(move_square, move_square.done_future)
     except KeyboardInterrupt:
         print(
             f"{move_square.get_name()} received a shutdown request (Ctrl+C)."
