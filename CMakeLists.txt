@@ -22,6 +22,7 @@ ament_python_install_package(${PROJECT_NAME}_modules)
 # Install Python executables
 install(PROGRAMS
   scripts/turn.py
+  scripts/forward.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
