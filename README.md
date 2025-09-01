@@ -13,7 +13,7 @@ Where `X` is an integer value representing the desired angle (in degrees) for th
 Calling the `forward.py` script to make the robot move forwards by `Y` meters:
 
 ```bash
-ros2 run com_offer_holder_days turn.py --ros_args -p fwd_dist:=Y
+ros2 run com_offer_holder_days forward.py --ros_args -p fwd_dist:=Y
 ```
 
 Where `Y` is a double precision value representing the desired distance (in meters) for the robot to move forwards.
