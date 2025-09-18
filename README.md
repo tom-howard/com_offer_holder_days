@@ -1,5 +1,30 @@
 # COM Offer Holder Day Application for the Waffles (2026+)
 
+## Installing
+
+(Should work on the Robotics Lab Laptops using the `student` account.)
+
+```
+cd ~/ros2_ws/src/
+```
+
+```
+git clone https://github.com/tom-howard/com_offer_holder_days.git
+```
+
+```
+cd ~/ros2_ws/ && colcon build --packages-select com_offer_holder_days
+```
+
+```
+source ~/.bashrc
+```
+
+## Robot/laptop pairing & setup
+
+Make sure the laptop is paired with a robot, [as per the instructions here](https://tom-howard.github.io/com2009/waffles/launching-ros/).
+
+
 ## ROS 2 CLI Calls
 
 Calling the `turn.py` script to make the robot turn by `X` degrees:
