@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
+import time
 import rclpy
 from rclpy.node import Node
 from rclpy.signals import SignalHandlerOptions
 from rclpy.task import Future
 
-from geometry_msgs.msg import Twist 
+from geometry_msgs.msg import TwistStamped as Twist 
 from nav_msgs.msg import Odometry 
 
 from com_offer_holder_days_modules.tb3_tools import quaternion_to_euler
@@ -31,6 +32,8 @@ class Turn(Node):
 
         self.vel_msg = Twist()
         self.first_message = False
+        self.hold = True
+
         self.done_future = Future()
 
         ctrl_rate = 10 # hz
@@ -39,8 +42,8 @@ class Turn(Node):
             callback=self.exec_turn,
         )
 
-        self.declare_parameter('yaw_ang', 45)
-        self.yaw_ang_request = self.get_parameter('yaw_ang').get_parameter_value().integer_value
+        self.declare_parameter('angle', 45)
+        self.yaw_ang_request = self.get_parameter('angle').get_parameter_value().integer_value
 
         self.theta_z = 0.0
         self.theta_zref = 0.0
@@ -52,9 +55,13 @@ class Turn(Node):
             f"Request to turn by {self.yaw_ang_request} degrees..."
         )
 
+        time.sleep(1.0)
+        self.hold = False
+
     def on_shutdown(self):
         print("Stopping the robot...")
-        self.vel_pub.publish(Twist())
+        for i in range(5):
+            self.vel_pub.publish(Twist())
         self.shutdown = True
 
     def odom_callback(self, msg_data: Odometry):
@@ -62,15 +69,18 @@ class Turn(Node):
 
         (_, _, yaw) = quaternion_to_euler(pose.orientation)
 
-        self.theta_z = degrees(abs(yaw)) # abs(yaw) makes life much easier!!
+        self.theta_z = degrees(abs(yaw)) 
 
         if not self.first_message: 
             self.first_message = True
             self.theta_zref = self.theta_z
 
     def exec_turn(self):
+
+        if self.hold:
+            return
+        
         # turn by X degrees...
-        # keep track of how much yaw has been accrued during the current turn
         self.yaw = self.yaw + abs(self.theta_z - self.theta_zref)
         self.theta_zref = self.theta_z
         if self.yaw >= self.yaw_ang_request:
@@ -83,11 +93,10 @@ class Turn(Node):
             self.done_future.set_result('done')
         else:
             # Not there yet, keep going:
-            self.vel_msg.angular.z = 0.3
+            self.vel_msg.twist.angular.z = 0.3
             self.get_logger().info(
-                "Turning.."
-            )
-    
+                f"Turning [{self.yaw:.0f}/{self.yaw_ang_request} degrees]."
+            )    
 
         # publish whatever velocity command has been set above:
         self.vel_pub.publish(self.vel_msg)

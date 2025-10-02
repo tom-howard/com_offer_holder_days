@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
+import time
 import rclpy
 from rclpy.node import Node
 from rclpy.signals import SignalHandlerOptions
 from rclpy.task import Future
 
-from geometry_msgs.msg import Twist 
+from geometry_msgs.msg import TwistStamped as Twist
 from nav_msgs.msg import Odometry 
 
 from math import sqrt, pow
@@ -29,8 +30,8 @@ class MoveFwd(Node):
         )
 
         self.vel_msg = Twist()
-        self.first_message = False
-        self.turn = False 
+        self.first_message = False 
+        self.hold = True
 
         self.done_future = Future()
         
@@ -40,8 +41,8 @@ class MoveFwd(Node):
             callback=self.exec_fwd_motion,
         )
 
-        self.declare_parameter('fwd_dist', 0.3)
-        self.fwd_distance_request = self.get_parameter('fwd_dist').get_parameter_value().double_value
+        self.declare_parameter('dist', 0.3)
+        self.fwd_distance_request = self.get_parameter('dist').get_parameter_value().double_value
 
         self.x = 0.0; self.y = 0.0
         self.xref = 0.0; self.yref = 0.0
@@ -53,9 +54,13 @@ class MoveFwd(Node):
             f"Request to move forwards by {self.fwd_distance_request} meters..."
         )
 
+        time.sleep(1.0)
+        self.hold = False
+        
     def on_shutdown(self):
         print("Stopping the robot...")
-        self.vel_pub.publish(Twist())
+        for i in range(5):
+            self.vel_pub.publish(Twist())
         self.shutdown = True
 
     def odom_callback(self, msg_data: Odometry):
@@ -70,6 +75,9 @@ class MoveFwd(Node):
             self.yref = self.y
 
     def exec_fwd_motion(self):
+
+        if self.hold:
+            return
         
         self.distance = self.distance + sqrt(pow(self.x-self.xref, 2) + pow(self.y-self.yref, 2))
         self.xref = self.x
@@ -77,7 +85,6 @@ class MoveFwd(Node):
         if self.distance >= self.fwd_distance_request:
             # That's enough, stop moving!
             self.vel_msg = Twist()
-            self.turn = True
             self.distance = 0.0
             self.get_logger().info(
                 "Stopped."
@@ -85,9 +92,9 @@ class MoveFwd(Node):
             self.done_future.set_result('done')
         else:
             # Not there yet, keep going:
-            self.vel_msg.linear.x = 0.1
+            self.vel_msg.twist.linear.x = 0.1
             self.get_logger().info(
-                "Moving forwards."
+                f"Moving forwards [{self.distance:.2f}/{self.fwd_distance_request:.2f} m]."
             )
 
         # publish whatever velocity command has been set above:
