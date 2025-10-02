@@ -30,7 +30,7 @@ Make sure the laptop is paired with a robot, [as per the instructions here](http
 Calling the `turn.py` script to make the robot turn by `X` degrees:
 
 ```bash
-ros2 run com_offer_holder_days turn.py --ros_args -p yaw_ang:=X
+ros2 run com_offer_holder_days turn.py --ros-args -p angle:=X
 ```
 
 Where `X` is an integer value representing the desired angle (in degrees) for the robot to turn on the spot.
@@ -38,7 +38,7 @@ Where `X` is an integer value representing the desired angle (in degrees) for th
 Calling the `forward.py` script to make the robot move forwards by `Y` meters:
 
 ```bash
-ros2 run com_offer_holder_days forward.py --ros_args -p fwd_dist:=Y
+ros2 run com_offer_holder_days forward.py --ros-args -p dist:=Y
 ```
 
 Where `Y` is a double precision value representing the desired distance (in meters) for the robot to move forwards.
