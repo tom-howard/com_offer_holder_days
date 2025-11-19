@@ -33,7 +33,7 @@ Calling the `turn.py` script to make the robot turn by `X` degrees:
 ros2 run com_offer_holder_days turn.py --ros-args -p angle:=X
 ```
 
-Where `X` is an integer value representing the desired angle (in degrees) for the robot to turn on the spot.
+Where `X` is an integer value representing the desired angle (in degrees) for the robot to turn on the spot (+ve = anti-clockwise, -ve = clockwise).
 
 Calling the `forward.py` script to make the robot move forwards by `Y` meters:
 
@@ -41,4 +41,4 @@ Calling the `forward.py` script to make the robot move forwards by `Y` meters:
 ros2 run com_offer_holder_days forward.py --ros-args -p dist:=Y
 ```
 
-Where `Y` is a double precision value representing the desired distance (in meters) for the robot to move forwards.
+Where `Y` is a double precision value representing the desired distance (in meters) for the robot to move (+ve = forwards, -ve = reverse).
