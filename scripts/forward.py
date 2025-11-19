@@ -10,11 +10,12 @@ from geometry_msgs.msg import TwistStamped as Twist
 from nav_msgs.msg import Odometry 
 
 from math import sqrt, pow
+import numpy as np
 
 class MoveFwd(Node):
 
     def __init__(self):
-        super().__init__("node")
+        super().__init__("fwd_node")
 
         self.vel_pub = self.create_publisher(
             msg_type=Twist,
@@ -42,7 +43,9 @@ class MoveFwd(Node):
         )
 
         self.declare_parameter('dist', 0.3)
-        self.fwd_distance_request = self.get_parameter('dist').get_parameter_value().double_value
+        self.distance_request = self.get_parameter('dist').get_parameter_value().double_value
+        self.direction = np.sign(self.distance_request)
+        self.distance_request = abs(self.distance_request)
 
         self.x = 0.0; self.y = 0.0
         self.xref = 0.0; self.yref = 0.0
@@ -51,7 +54,7 @@ class MoveFwd(Node):
         self.shutdown = False
         
         self.get_logger().info(
-            f"Request to move forwards by {self.fwd_distance_request} meters..."
+            f"Request to move {"forwards" if self.direction > 0 else "backwards"} by {self.distance_request} meters..."
         )
 
         time.sleep(1.0)
@@ -82,23 +85,24 @@ class MoveFwd(Node):
         self.distance = self.distance + sqrt(pow(self.x-self.xref, 2) + pow(self.y-self.yref, 2))
         self.xref = self.x
         self.yref = self.y
-        if self.distance >= self.fwd_distance_request:
+        if self.distance >= self.distance_request:
             # That's enough, stop moving!
             self.vel_msg = Twist()
-            self.distance = 0.0
+            for i in range(5):
+                self.vel_pub.publish(self.vel_msg)
             self.get_logger().info(
-                "Stopped."
+                f"Moving [{self.distance:.2f}/{self.distance_request:.2f} m]."
             )
+            self.distance = 0.0
             self.done_future.set_result('done')
         else:
             # Not there yet, keep going:
-            self.vel_msg.twist.linear.x = 0.1
+            self.vel_msg.twist.linear.x = self.direction * 0.1
             self.get_logger().info(
-                f"Moving forwards [{self.distance:.2f}/{self.fwd_distance_request:.2f} m]."
+                f"Moving [{self.distance:.2f}/{self.distance_request:.2f} m].",
+                throttle_duration_sec=0.5,
             )
-
-        # publish whatever velocity command has been set above:
-        self.vel_pub.publish(self.vel_msg)
+            self.vel_pub.publish(self.vel_msg)
 
 def main(args=None):
     rclpy.init(
