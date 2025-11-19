@@ -89,6 +89,8 @@ class Turn(Node):
         if self.yaw >= self.yaw_ang_request:
             # That's enough, stop turning!
             self.vel_msg = Twist()
+            for i in range(5):
+                self.vel_pub.publish(self.vel_msg)
             self.get_logger().info(
                 f"Turning [{self.yaw:.0f}/{self.yaw_ang_request} degrees]."
             )
@@ -101,9 +103,7 @@ class Turn(Node):
                 f"Turning [{self.yaw:.0f}/{self.yaw_ang_request} degrees].",
                 throttle_duration_sec=0.5,
             )    
-
-        # publish whatever velocity command has been set above:
-        self.vel_pub.publish(self.vel_msg)
+            self.vel_pub.publish(self.vel_msg)
 
 def main(args=None):
     rclpy.init(
