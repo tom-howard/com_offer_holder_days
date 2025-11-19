@@ -11,11 +11,12 @@ from nav_msgs.msg import Odometry
 
 from com_offer_holder_days_modules.tb3_tools import quaternion_to_euler
 from math import degrees
+import numpy as np
 
 class Turn(Node):
 
     def __init__(self):
-        super().__init__("node")
+        super().__init__("turn_node")
 
         self.vel_pub = self.create_publisher(
             msg_type=Twist,
@@ -44,6 +45,8 @@ class Turn(Node):
 
         self.declare_parameter('angle', 45)
         self.yaw_ang_request = self.get_parameter('angle').get_parameter_value().integer_value
+        self.turn_dir = np.sign(self.yaw_ang_request)
+        self.yaw_ang_request = abs(self.yaw_ang_request)
 
         self.theta_z = 0.0
         self.theta_zref = 0.0
@@ -52,7 +55,7 @@ class Turn(Node):
         self.shutdown = False
         
         self.get_logger().info(
-            f"Request to turn by {self.yaw_ang_request} degrees..."
+            f"Request to turn by {self.turn_dir * self.yaw_ang_request} degrees..."
         )
 
         time.sleep(1.0)
@@ -86,16 +89,17 @@ class Turn(Node):
         if self.yaw >= self.yaw_ang_request:
             # That's enough, stop turning!
             self.vel_msg = Twist()
-            self.yaw = 0.0
             self.get_logger().info(
-                "Stopped."
+                f"Turning [{self.yaw:.0f}/{self.yaw_ang_request} degrees]."
             )
+            self.yaw = 0.0
             self.done_future.set_result('done')
         else:
             # Not there yet, keep going:
-            self.vel_msg.twist.angular.z = 0.3
+            self.vel_msg.twist.angular.z = self.turn_dir * 0.3
             self.get_logger().info(
-                f"Turning [{self.yaw:.0f}/{self.yaw_ang_request} degrees]."
+                f"Turning [{self.yaw:.0f}/{self.yaw_ang_request} degrees].",
+                throttle_duration_sec=0.5,
             )    
 
         # publish whatever velocity command has been set above:
