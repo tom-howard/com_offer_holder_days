@@ -15,7 +15,7 @@ import numpy as np
 class MoveFwd(Node):
 
     def __init__(self):
-        super().__init__("fwd_node")
+        super().__init__("drive_node")
 
         self.vel_pub = self.create_publisher(
             msg_type=Twist,
@@ -99,7 +99,7 @@ class MoveFwd(Node):
             # Not there yet, keep going:
             self.vel_msg.twist.linear.x = self.direction * 0.1
             self.get_logger().info(
-                f"Moving [{self.distance:.2f}/{self.distance_request:.2f} m].",
+                f"Moving {"forwards" if self.direction > 0 else "backwards"} [{self.distance:.2f}/{self.distance_request:.2f} m].",
                 throttle_duration_sec=0.5,
             )
             self.vel_pub.publish(self.vel_msg)
