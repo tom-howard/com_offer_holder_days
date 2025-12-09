@@ -47,6 +47,7 @@ class Turn(Node):
         self.yaw_ang_request = self.get_parameter('angle').get_parameter_value().integer_value
         self.turn_dir = np.sign(self.yaw_ang_request)
         self.yaw_ang_request = abs(self.yaw_ang_request)
+        self.do_not_move = True if self.yaw_ang_request == 0 else False
 
         self.theta_z = 0.0
         self.theta_zref = 0.0
@@ -86,7 +87,7 @@ class Turn(Node):
         # turn by X degrees...
         self.yaw = self.yaw + abs(self.theta_z - self.theta_zref)
         self.theta_zref = self.theta_z
-        if self.yaw >= self.yaw_ang_request:
+        if self.yaw >= self.yaw_ang_request or self.do_not_move:
             # That's enough, stop turning!
             self.vel_msg = Twist()
             for i in range(5):

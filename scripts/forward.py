@@ -46,6 +46,7 @@ class MoveFwd(Node):
         self.distance_request = self.get_parameter('dist').get_parameter_value().double_value
         self.direction = np.sign(self.distance_request)
         self.distance_request = abs(self.distance_request)
+        self.do_not_move = True if self.distance_request < 0.001 else False
 
         self.x = 0.0; self.y = 0.0
         self.xref = 0.0; self.yref = 0.0
@@ -85,7 +86,7 @@ class MoveFwd(Node):
         self.distance = self.distance + sqrt(pow(self.x-self.xref, 2) + pow(self.y-self.yref, 2))
         self.xref = self.x
         self.yref = self.y
-        if self.distance >= self.distance_request:
+        if self.distance >= self.distance_request or self.do_not_move:
             # That's enough, stop moving!
             self.vel_msg = Twist()
             for i in range(5):
