@@ -47,6 +47,7 @@ class Turn(Node):
         self.yaw_ang_request = self.get_parameter('angle').get_parameter_value().integer_value
         self.turn_dir = np.sign(self.yaw_ang_request)
         self.yaw_ang_request = abs(self.yaw_ang_request)
+        self.yaw_ang_request = min(self.yaw_ang_request, 360) # limit to 360 degrees
         self.do_not_move = True if self.yaw_ang_request == 0 else False
 
         self.theta_z = 0.0

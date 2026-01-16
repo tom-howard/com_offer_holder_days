@@ -46,6 +46,7 @@ class MoveFwd(Node):
         self.distance_request = self.get_parameter('dist').get_parameter_value().double_value
         self.direction = np.sign(self.distance_request)
         self.distance_request = abs(self.distance_request)
+        self.distance_request = min(self.distance_request, 2.0) # limit to 2 meters
         self.do_not_move = True if self.distance_request < 0.001 else False
 
         self.x = 0.0; self.y = 0.0
