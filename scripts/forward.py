@@ -49,6 +49,10 @@ class MoveFwd(Node):
         self.distance_request = min(self.distance_request, 2.0) # limit to 2 meters
         self.do_not_move = True if self.distance_request < 0.001 else False
 
+        self.declare_parameter('speed', 0.1)
+        self.speed_request = self.get_parameter('speed').get_parameter_value().double_value
+        self.speed_request = min(abs(self.speed_request), 0.26) # limit to 0.26 m/s
+
         self.x = 0.0; self.y = 0.0
         self.xref = 0.0; self.yref = 0.0
         self.distance = 0.0 # a variable to keep track of how far the robot has moved
@@ -99,7 +103,7 @@ class MoveFwd(Node):
             self.done_future.set_result('done')
         else:
             # Not there yet, keep going:
-            self.vel_msg.twist.linear.x = self.direction * 0.1
+            self.vel_msg.twist.linear.x = self.direction * self.speed_request
             self.get_logger().info(
                 f"Moving {"forwards" if self.direction > 0 else "backwards"} [{self.distance:.2f}/{self.distance_request:.2f} m].",
                 throttle_duration_sec=0.5,
